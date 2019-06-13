@@ -1,0 +1,25 @@
+{
+  "name": "scp-foundation-scrapper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^0.19.0",
+    "cheerio": "^1.0.0-rc.3",
+    "typescript": "^3.5.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gioragutt/scp-foundation-scrapper.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gioragutt/scp-foundation-scrapper/issues"
+  },
+  "homepage": "https://github.com/gioragutt/scp-foundation-scrapper#readme"
+}
