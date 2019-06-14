@@ -1,39 +1,28 @@
-const cheerio = require('cheerio');
-const axios = require('axios');
-
-const url = process.argv[2] || 'http://www.scp-wiki.net/scp-003';
-
-function addTextForTitle(titleToContent, currentTitle, data) {
-  titleToContent[currentTitle] = titleToContent[currentTitle] || [];
-  const content = titleToContent[currentTitle];
-  content.push(data);
-}
-
-function processParagraphs(allParagraphs) {
-  const titleToContent = {};
-  let currentTitle;
-  allParagraphs.each((index, element) => {
-    element.children.forEach(child => {
-      if (child.type === 'tag' && child.tagName === 'strong') {
-        currentTitle = child.children[0].data;
-        return;
-      }
-
-      if (child.type === 'text') {
-        addTextForTitle(titleToContent, currentTitle, child.data);
-      }
-    });
-  });
-
-  return titleToContent;
-}
+const amqp = require('amqplib');
 
 async function main() {
-  const { data } = await axios(url);
-  const $ = cheerio.load(data);
-  const paragraphs = $('#page-content > p');
-  const titleToContent = processParagraphs(paragraphs);
-  console.log(Object.keys(titleToContent));
+  const channel = await amqp
+    .connect('amqp://rabbitmq:rabbitmq@localhost')
+    .then(connection => connection.createChannel());
+
+  channel.assertQueue('hello', {
+    durable: false,
+  });
+
+  channel.consume(
+    'hello',
+    ({ content }) => {
+      console.log('received content:', content.toString());
+    },
+    {
+      noAck: true,
+    }
+  );
+
+  let i = 0;
+  setInterval(() => {
+    channel.sendToQueue('hello', Buffer.from(`world ${i++}`));
+  }, 1000);
 }
 
-main().catch(e => console.error(e.toJSON()));
+main().catch(console.error);
