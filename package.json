@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "@welldone-software/node-toolbelt": "^1.6.2",
     "amqplib": "^0.5.3",
     "axios": "^0.19.0",
     "cheerio": "^1.0.0-rc.3",
@@ -13,7 +14,8 @@
     "@types/amqplib": "^0.5.12"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "buildImage": "docker build -t scp-foundation-scrapper:tmp_1 ."
   },
   "repository": {
     "type": "git",

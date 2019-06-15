@@ -1,0 +1,39 @@
+# Docker-compose for Graylog
+version: '3'
+services:
+  rabbit:
+    image: 'rabbitmq:3-management'
+    hostname: 'rabbit'
+    environment:
+      RABBITMQ_ERLANG_COOKIE: 'SWQOKODSQALRPCLNMEQG'
+      RABBITMQ_DEFAULT_USER: 'rabbitmq'
+      RABBITMQ_DEFAULT_PASS: 'rabbitmq'
+      RABBITMQ_DEFAULT_VHOST: '/'
+    ports:
+      - '15672:15672'
+      - '5672:5672'
+    labels:
+      NAME: 'rabbitmq'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:15672']
+      interval: 5s
+      timeout: 15s
+      retries: 1
+    volumes:
+      - './rabbitmq-compose/enabled_plugins:/etc/rabbitmq/enabled_plugins'
+      #- "./rabbitmq-compose/rabbitmq.config:/etc/rabbitmq/rabbitmq.config:ro"
+      #- "./rabbitmq-compose/autocluster-0.4.1.ez:/usr/lib/rabbitmq/lib/rabbitmq_server-3.5.5/plugins/autocluster-0.4.1.ez"
+  # main:
+  #   image: scp-foundation-scrapper:tmp_1
+  #   hostname: 'main'
+  #   restart: on-failure
+  #   ports:
+  #     - '9229:9229'
+  #   environment:
+  #     RABBITMQ_HOST: 'rabbit'
+  #     RABBITMQ_USER: 'rabbitmq'
+  #     RABBITMQ_PASS: 'rabbitmq'
+  #     CONNECTION_ATTEMPTS: '5'
+  #     CONNECTION_RETRY_DELAY_MS: '2000'
+  #   depends_on:
+  #     - rabbit

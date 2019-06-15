@@ -1,28 +1,35 @@
-const amqp = require('amqplib');
+const { createChannel } = require('./rabbit');
+
+const { delay } = require('./utils');
+const processScp = require('./processScp');
+
+const QUEUE_NAME = 'scp_process_request';
 
 async function main() {
-  const channel = await amqp
-    .connect('amqp://rabbitmq:rabbitmq@localhost')
-    .then(connection => connection.createChannel());
+  const channel = await createChannel();
 
-  channel.assertQueue('hello', {
-    durable: false,
+  channel.assertQueue(QUEUE_NAME);
+
+  channel.consume(QUEUE_NAME, async msg => {
+    const url = msg.content.toString();
+    console.log('Processing scp', url);
+    const result = await processScp(url);
+    console.log('Result for', url);
+    const title = result.find(s => s.title === 'Title #:');
+    if (title) {
+      console.log('Got title', title.content);
+    } else {
+      console.log('No title, full result is', result);
+    }
+    channel.ack(msg);
   });
 
-  channel.consume(
-    'hello',
-    ({ content }) => {
-      console.log('received content:', content.toString());
-    },
-    {
-      noAck: true,
-    }
-  );
-
-  let i = 0;
-  setInterval(() => {
-    channel.sendToQueue('hello', Buffer.from(`world ${i++}`));
-  }, 1000);
+  for (let scp = 1; scp <= 5; scp++) {
+    await delay(1000);
+    const url = `http://www.scp-wiki.net/scp-${scp.toString().padStart(3, '0')}`;
+    console.log('Sending SCP processing request:', url);
+    channel.sendToQueue('scp_process_request', Buffer.from(url));
+  }
 }
 
 main().catch(console.error);
