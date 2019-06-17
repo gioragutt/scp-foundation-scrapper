@@ -38,6 +38,12 @@ services:
   #   depends_on:
   #     - rabbit
 
+  redis:
+    image: redis
+    hostname: redis
+    ports:
+      - '6379:6379'
+
   process-scp-consumer:
     image: scp-foundation-scrapper:tmp_1
     hostname: process-scp-consumer
