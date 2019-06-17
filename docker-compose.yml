@@ -37,3 +37,31 @@ services:
   #     CONNECTION_RETRY_DELAY_MS: '2000'
   #   depends_on:
   #     - rabbit
+
+  process-scp-consumer:
+    image: scp-foundation-scrapper:tmp_1
+    hostname: process-scp-consumer
+    command: node processScpConsumer.js
+    restart: on-failure
+    environment:
+      RABBITMQ_HOST: rabbit
+      RABBITMQ_USER: rabbitmq
+      RABBITMQ_PASS: rabbitmq
+      CONNECTION_ATTEMPTS: 5
+      CONNECTION_RETRY_DELAY_MS: 2000
+    depends_on:
+      - rabbit
+
+  process-scp-result-consumer:
+    image: scp-foundation-scrapper:tmp_1
+    hostname: process-scp-result-consumer
+    command: node processScpResultConsumer.js
+    restart: on-failure
+    environment:
+      RABBITMQ_HOST: rabbit
+      RABBITMQ_USER: rabbitmq
+      RABBITMQ_PASS: rabbitmq
+      CONNECTION_ATTEMPTS: 5
+      CONNECTION_RETRY_DELAY_MS: 2000
+    depends_on:
+      - rabbit
