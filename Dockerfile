@@ -2,9 +2,9 @@
 # base image with just our source files
 FROM node:10-alpine as BASE
 WORKDIR /app
-COPY package.json .
+COPY package.*json .
 RUN npm install --production
-COPY *.js ./
+COPY . .
 
 # final production image
 FROM BASE as PROD

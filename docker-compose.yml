@@ -23,20 +23,6 @@ services:
       - './rabbitmq-compose/enabled_plugins:/etc/rabbitmq/enabled_plugins'
       #- "./rabbitmq-compose/rabbitmq.config:/etc/rabbitmq/rabbitmq.config:ro"
       #- "./rabbitmq-compose/autocluster-0.4.1.ez:/usr/lib/rabbitmq/lib/rabbitmq_server-3.5.5/plugins/autocluster-0.4.1.ez"
-  # main:
-  #   image: scp-foundation-scrapper:tmp_1
-  #   hostname: 'main'
-  #   restart: on-failure
-  #   ports:
-  #     - '9229:9229'
-  #   environment:
-  #     RABBITMQ_HOST: 'rabbit'
-  #     RABBITMQ_USER: 'rabbitmq'
-  #     RABBITMQ_PASS: 'rabbitmq'
-  #     CONNECTION_ATTEMPTS: '5'
-  #     CONNECTION_RETRY_DELAY_MS: '2000'
-  #   depends_on:
-  #     - rabbit
 
   redis:
     image: redis
@@ -44,10 +30,9 @@ services:
     ports:
       - '6379:6379'
 
-  process-scp-consumer:
+  initial-processing-worker:
     image: scp-foundation-scrapper:tmp_1
-    hostname: process-scp-consumer
-    command: node processScpConsumer.js
+    command: node workers/initialProcessing.js
     restart: on-failure
     environment:
       RABBITMQ_HOST: rabbit
@@ -55,13 +40,14 @@ services:
       RABBITMQ_PASS: rabbitmq
       CONNECTION_ATTEMPTS: 5
       CONNECTION_RETRY_DELAY_MS: 2000
+      REDIS_HOST: redis
     depends_on:
       - rabbit
+      - redis
 
-  process-scp-result-consumer:
+  extract-tags-worker:
     image: scp-foundation-scrapper:tmp_1
-    hostname: process-scp-result-consumer
-    command: node processScpResultConsumer.js
+    command: node workers/extractTags.js
     restart: on-failure
     environment:
       RABBITMQ_HOST: rabbit
@@ -69,5 +55,7 @@ services:
       RABBITMQ_PASS: rabbitmq
       CONNECTION_ATTEMPTS: 5
       CONNECTION_RETRY_DELAY_MS: 2000
+      REDIS_HOST: redis
     depends_on:
       - rabbit
+      - redis

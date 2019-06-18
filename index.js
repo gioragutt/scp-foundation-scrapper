@@ -1,24 +1,18 @@
-const { createChannel } = require('./rabbit');
-const { delay } = require('./utils');
-
-const QUEUE_NAME = 'scp_process_request';
+const { createChannel } = require('./lib/rabbit');
+const { INITIAL_PROCESSING_REQUEST } = require('./messageNames');
 
 async function main() {
   const channel = await createChannel();
 
-  channel.assertQueue(QUEUE_NAME);
+  channel.assertQueue(INITIAL_PROCESSING_REQUEST);
 
   function sendScpProcessRequest(scp) {
     const url = `http://www.scp-wiki.net/scp-${scp.toString().padStart(3, '0')}`;
     console.log('Sending SCP processing request:', url);
-    channel.sendToQueue('scp_process_request', Buffer.from(url));
+    channel.sendToQueue(INITIAL_PROCESSING_REQUEST, Buffer.from(url));
   }
-  sendScpProcessRequest(8);
-
-  // for (let scp = 2; scp <= 2; scp++) {
-  //   await delay(1000);
-  //   sendScpProcessRequest(scp);
-  // }
+  sendScpProcessRequest(3);
+  setTimeout(() => process.exit(0), 1000);
 }
 
 main().catch(console.error);

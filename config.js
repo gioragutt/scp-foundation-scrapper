@@ -8,6 +8,7 @@ const config = mapEnv({
   rabbitmqPass: 'rabbitmq',
   connectionAttempts: '5',
   connectionRetryDelayMs: '1000',
+  redisHost: 'redis',
 });
 
 const fixedConfig = {
