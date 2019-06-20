@@ -1,4 +1,4 @@
-const { basicWorker } = require('../lib/rabbit');
+const { createPipeWorker, startWorker } = require('../lib/rabbit');
 const redis = require('../lib/redis');
 const processScp = require('../lib/processScp');
 const { INITIAL_PROCESSING_REQUEST, INITIAL_PROCESSING_FINISHED } = require('../messageNames');
@@ -9,27 +9,17 @@ const saveInitialProcessingResult = async ({ id, initialProcessingResult, scpHtm
   await redis.set(initialProcessingResultKey(id), JSON.stringify(initialProcessingResult));
 };
 
-basicWorker(
-  [INITIAL_PROCESSING_REQUEST, INITIAL_PROCESSING_FINISHED],
-  INITIAL_PROCESSING_REQUEST,
-  channel => async msg => {
-    const url = msg.content.toString();
-    console.log('Started processing', url);
-    try {
+startWorker(
+  createPipeWorker({
+    from: INITIAL_PROCESSING_REQUEST,
+    to: INITIAL_PROCESSING_FINISHED,
+    consumer: async ({ content }) => {
+      const url = content.toString();
+      console.log('Started processing', url);
       const result = await processScp(url);
       await saveInitialProcessingResult(result);
-
-      channel.sendToQueue(INITIAL_PROCESSING_FINISHED, Buffer.from(result.id), {
-        persistent: true,
-      });
-      channel.ack(msg);
-
       console.log('Finished processing', url);
-    } catch (e) {
-      console.log('Caught error while processing', url);
-      console.log('--------------------------------');
-      console.error(e);
-      console.log('--------------------------------');
-    }
-  }
-).catch(console.error);
+      return result.id;
+    },
+  })
+);

@@ -1,4 +1,4 @@
-const { basicWorker } = require('../lib/rabbit');
+const { createSinkWorker, startWorker } = require('../lib/rabbit');
 const redis = require('../lib/redis');
 const { tagsKey, rawHtmlKey, tagsToScpsKey, ALL_TAGS_KEY } = require('../redisKeys');
 const { INITIAL_PROCESSING_FINISHED } = require('../messageNames');
@@ -16,13 +16,15 @@ const saveTags = async (id, tags) => {
   await pipeline.exec();
 };
 
-basicWorker([INITIAL_PROCESSING_FINISHED], INITIAL_PROCESSING_FINISHED, channel => async msg => {
-  const id = msg.content.toString();
-  console.log('Extracting tags for', id);
-  const html = await redis.get(rawHtmlKey(id));
-  const tags = extractTags(html);
-  await saveTags(id, tags);
-  channel.ack(msg);
-
-  console.log('Extracted tags for', id, ':', tags);
-}).catch(console.error);
+startWorker(
+  createSinkWorker({
+    queue: INITIAL_PROCESSING_FINISHED,
+    consumer: async ({ content }) => {
+      const id = content.toString();
+      console.log('Extracting tags for', id);
+      const html = await redis.get(rawHtmlKey(id));
+      const tags = extractTags(html);
+      await saveTags(id, tags);
+    },
+  })
+);
