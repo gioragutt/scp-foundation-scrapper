@@ -1,7 +1,8 @@
-const { createSinkWorker, startWorker } = require('../lib/rabbit');
+const { createSinkWorker, startWorker } = require('../lib/worker');
 const redis = require('../lib/redis');
 const { tagsKey, rawHtmlKey, tagsToScpsKey, ALL_TAGS_KEY } = require('../redisKeys');
 const { INITIAL_PROCESSING_FINISHED } = require('../messageNames');
+const { groupAndTime } = require('../lib/utils');
 
 const extractTags = require('../lib/extractTags');
 
@@ -19,12 +20,15 @@ const saveTags = async (id, tags) => {
 startWorker(
   createSinkWorker({
     queue: INITIAL_PROCESSING_FINISHED,
-    consumer: async ({ content }) => {
-      const id = content.toString();
-      console.log('Extracting tags for', id);
-      const html = await redis.get(rawHtmlKey(id));
-      const tags = extractTags(html);
-      await saveTags(id, tags);
+    consumer: async ({ content }, { workerTag }) => {
+      const scpId = JSON.parse(content.toString());
+      const label = `${workerTag} ${scpId}`;
+      await groupAndTime(label, async () => {
+        const html = await redis.get(rawHtmlKey(scpId));
+        const tags = extractTags(html);
+        await saveTags(scpId, tags);
+        console.log('Extracted tags', tags);
+      });
     },
   })
 );

@@ -1,4 +1,4 @@
-const { createPipeWorker, startWorker } = require('../lib/rabbit');
+const { createPipeWorker, startWorker } = require('../lib/worker');
 const redis = require('../lib/redis');
 const processScp = require('../lib/processScp');
 const { INITIAL_PROCESSING_REQUEST, INITIAL_PROCESSING_FINISHED } = require('../messageNames');

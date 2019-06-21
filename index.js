@@ -11,7 +11,7 @@ async function main() {
     console.log('Sending SCP processing request:', url);
     channel.sendToQueue(INITIAL_PROCESSING_REQUEST, Buffer.from(url));
   }
-  sendScpProcessRequest(3);
+  sendScpProcessRequest(8);
   setTimeout(() => process.exit(0), 1000);
 }
 
