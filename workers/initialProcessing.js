@@ -1,8 +1,8 @@
 const { createPipeWorker, startWorker } = require('../lib/worker');
 const redis = require('../lib/redis');
-const processScp = require('../lib/processScp');
-const { INITIAL_PROCESSING_REQUEST, INITIAL_PROCESSING_FINISHED } = require('../messageNames');
-const { initialProcessingResultKey, rawHtmlKey } = require('../redisKeys');
+const processScp = require('../api/processScp');
+const { INITIAL_PROCESSING_REQUEST, INITIAL_PROCESSING_FINISHED } = require('../api/messageNames');
+const { initialProcessingResultKey, rawHtmlKey } = require('../api/redisKeys');
 
 const saveInitialProcessingResult = async ({ id, initialProcessingResult, scpHtml }) => {
   await redis.set(rawHtmlKey(id), scpHtml);

@@ -1,5 +1,5 @@
 const { createChannel } = require('./lib/rabbit');
-const { INITIAL_PROCESSING_REQUEST } = require('./messageNames');
+const { INITIAL_PROCESSING_REQUEST } = require('./api/messageNames');
 
 async function main() {
   const channel = await createChannel();
