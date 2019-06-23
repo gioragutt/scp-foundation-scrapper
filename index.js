@@ -1,18 +1,19 @@
 const { createChannel } = require('./lib/rabbit');
 const { delay } = require('./lib/utils');
-const { BEGIN_PROCESSING_SCP } = require('./api/messageNames');
+const { BEGIN_PROCESSING_SCP } = require('./api/transports');
+const { sendToTransport } = require('./lib/rabbit');
 const uuid = require('uuid');
 
 async function main() {
   const channel = await createChannel();
 
-  channel.assertQueue(BEGIN_PROCESSING_SCP);
+  await BEGIN_PROCESSING_SCP.init(channel);
 
   async function sendScpProcessRequest(scp) {
     await delay(1000);
     const url = `http://www.scp-wiki.net/scp-${scp.toString().padStart(3, '0')}`;
     console.log('Sending SCP processing request:', url);
-    channel.sendToQueue(BEGIN_PROCESSING_SCP, Buffer.from(url), {
+    sendToTransport(channel, BEGIN_PROCESSING_SCP, url, {
       headers: {
         tracingId: uuid(),
       },

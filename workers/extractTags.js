@@ -1,7 +1,7 @@
 const { createSinkWorker, startWorker } = require('../lib/worker');
 const redis = require('../lib/redis');
 const { tagsKey, rawHtmlKey, tagsToScpsKey, ALL_TAGS_KEY } = require('../api/redisKeys');
-const { SCP_HTML_EXTRACTED } = require('../api/messageNames');
+const { SCP_HTML_EXTRACTED } = require('../api/transports');
 const { groupAndTime } = require('../lib/utils');
 
 const extractTags = require('../api/extractTags');
@@ -19,7 +19,7 @@ const saveTags = async (id, tags) => {
 
 startWorker(
   createSinkWorker({
-    queue: SCP_HTML_EXTRACTED,
+    transport: SCP_HTML_EXTRACTED,
     consumer: async ({ content }, { workerTag }) => {
       const id = JSON.parse(content.toString());
       await groupAndTime(`${workerTag}: ${id}`, async () => {

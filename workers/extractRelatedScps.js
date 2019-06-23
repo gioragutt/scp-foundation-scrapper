@@ -3,12 +3,12 @@ const redis = require('../lib/redis');
 const { groupAndTime } = require('../lib/utils');
 
 const extractRelatedScps = require('../api/extractRelatedScps');
-const { SCP_HTML_EXTRACTED } = require('../api/messageNames');
+const { SCP_HTML_EXTRACTED } = require('../api/transports');
 const { relatedScpsKey, rawHtmlKey } = require('../api/redisKeys');
 
 startWorker(
   createSinkWorker({
-    queue: SCP_HTML_EXTRACTED,
+    transport: SCP_HTML_EXTRACTED,
     consumer: async ({ content }, { workerTag }) => {
       const id = JSON.parse(content.toString());
       return groupAndTime(`${workerTag}: ${id}`, async () => {
