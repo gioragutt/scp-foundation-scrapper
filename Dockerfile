@@ -9,4 +9,3 @@ COPY . .
 # final production image
 FROM BASE as PROD
 EXPOSE 9229
-CMD ["node", "--inspect-brk=0.0.0.0", "index.js"]

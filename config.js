@@ -6,7 +6,7 @@ const config = mapEnv({
   rabbitmqHost: 'localhost',
   rabbitmqUser: 'rabbitmq',
   rabbitmqPass: 'rabbitmq',
-  connectionAttempts: '5',
+  connectionAttempts: '10',
   connectionRetryDelayMs: '1000',
   redisHost: 'localhost',
 });

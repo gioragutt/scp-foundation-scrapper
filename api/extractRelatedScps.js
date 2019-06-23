@@ -1,8 +1,6 @@
 const cheerio = require('cheerio');
-const axios = require('axios');
 
 const ITEM_NUMBER_REGEX = /SCP-[0-9]{3,4}/g;
-const ALPHANUMERIC_REGEX = /^[A-Za-z0-9]+$/i;
 const NAVIGATION_CHARACTER = '«';
 
 function initializeSectionData(title) {
@@ -64,7 +62,7 @@ function readSections(allParagraphs) {
   let currentTitle;
 
   allParagraphs.each((index, { children, tagName, parent }) => {
-    console.log('Handling', tagName);
+    // console.log('Handling', tagName);
     if (currentTitle && tagName === 'blockquote') {
       handleBlockquote(titleToContent[currentTitle], children);
       return;
@@ -87,13 +85,13 @@ function readSections(allParagraphs) {
       }
 
       if (!currentTitle) {
-        console.log(`Cannot handle ${nodeDescription(child)} before title is found`);
+        console.warn(`Cannot handle ${nodeDescription(child)} before title is found`);
         return;
       }
 
       const handleNode = handleChildByType[child.type] || handleChildByType[child.tagName];
       if (!handleNode) {
-        console.log(`Unknown type ${nodeDescription(child)}`);
+        console.warn(`Unknown type ${nodeDescription(child)}`);
         return;
       }
 
@@ -109,12 +107,12 @@ function filterNavigationParts(sectionParts) {
   for (let i = 0; i < sectionParts.length; i++) {
     const sectionPart = sectionParts[i];
     if (sectionPart.includes(NAVIGATION_CHARACTER)) {
-      console.log(`Part ${i}: '${sectionPart}' contains navigation character`);
+      console.warn(`Part ${i}: '${sectionPart}' contains navigation character`);
       break;
     }
     filtered.push(sectionPart);
   }
-  console.log(filtered);
+  // console.log(filtered);
   return filtered;
 }
 
@@ -137,6 +135,14 @@ function cleanColonFromBeginning(text) {
   return text.trim();
 }
 
+const toSet = arr =>
+  arr.reduce((acc, curr) => {
+    if (!acc.includes(curr)) {
+      acc.push(curr);
+    }
+    return acc;
+  }, []);
+
 function processSectionParts(section) {
   const { sectionParts } = section;
   const title = cleanTitle(section.title);
@@ -146,15 +152,10 @@ function processSectionParts(section) {
     .join(' ');
 
   if (!content) {
-    console.log(`Section ${title} has no content?`);
+    console.warn(`Section ${title} has no content?`);
   }
 
-  const referencedScps = (content.match(ITEM_NUMBER_REGEX) || []).reduce((acc, curr) => {
-    if (!acc.includes(curr)) {
-      acc.push(curr);
-    }
-    return acc;
-  }, []);
+  const referencedScps = toSet(content.match(ITEM_NUMBER_REGEX) || []);
 
   return {
     ...section,
@@ -164,19 +165,15 @@ function processSectionParts(section) {
   };
 }
 
-module.exports = async function processScp(url) {
-  const { data: scpHtml } = await axios(url);
-  const id = url.toUpperCase().match(ITEM_NUMBER_REGEX)[0];
+module.exports = async function extractRelatedScps(scpHtml) {
   const $ = cheerio.load(scpHtml);
   const elementsToRead = ['p', 'ul', 'blockquote'];
   const paragraphsSelector = elementsToRead.map(e => `#page-content ${e}`).join(', ');
-  const sections = readSections($(paragraphsSelector))
+  const relatedScps = readSections($(paragraphsSelector))
     .filter(section => section.sectionParts.length > 0)
-    .map(processSectionParts);
+    .map(processSectionParts)
+    .map(s => s.referencedScps)
+    .reduce((acc, curr) => acc.concat(curr), []);
 
-  return {
-    id,
-    initialProcessingResult: sections,
-    scpHtml,
-  };
+  return toSet(relatedScps);
 };

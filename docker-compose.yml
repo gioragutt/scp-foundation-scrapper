@@ -15,7 +15,7 @@ services:
     labels:
       NAME: 'rabbitmq'
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:15672']
+      test: ['CMD', 'curl', '-f', 'http://rabbit:15672']
       interval: 5s
       timeout: 15s
       retries: 1
@@ -30,9 +30,24 @@ services:
     ports:
       - '6379:6379'
 
-  initial-processing-worker:
+  extract-raw-html-worker:
     image: scp-foundation-scrapper:tmp_1
-    command: node workers/initialProcessing.js
+    command: node workers/extractRawHtml.js
+    restart: on-failure
+    environment:
+      RABBITMQ_HOST: rabbit
+      RABBITMQ_USER: rabbitmq
+      RABBITMQ_PASS: rabbitmq
+      CONNECTION_ATTEMPTS: 5
+      CONNECTION_RETRY_DELAY_MS: 2000
+      REDIS_HOST: redis
+    depends_on:
+      - rabbit
+      - redis
+
+  extract-related-scps-worker:
+    image: scp-foundation-scrapper:tmp_1
+    command: node workers/extractRelatedScps.js
     restart: on-failure
     environment:
       RABBITMQ_HOST: rabbit

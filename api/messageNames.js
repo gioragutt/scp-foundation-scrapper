@@ -1,7 +1,7 @@
-const INITIAL_PROCESSING_REQUEST = 'initial_processing_request';
-const INITIAL_PROCESSING_FINISHED = 'initial_processing_finished';
+const BEGIN_PROCESSING_SCP = 'begin_processing_scp';
+const SCP_HTML_EXTRACTED = 'scp_html_extracted';
 
 module.exports = {
-  INITIAL_PROCESSING_REQUEST,
-  INITIAL_PROCESSING_FINISHED,
+  BEGIN_PROCESSING_SCP,
+  SCP_HTML_EXTRACTED,
 };
