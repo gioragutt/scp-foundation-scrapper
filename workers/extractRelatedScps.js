@@ -5,8 +5,11 @@ const { groupAndTime } = require('../lib/utils');
 const extractRelatedScps = require('../api/extractRelatedScps');
 const { SCP_HTML_EXTRACTED } = require('../api/transports');
 const { relatedScpsKey, rawHtmlKey } = require('../api/redisKeys');
+const {
+  PROCESS_SCP: { jobType },
+} = require('../api/jobs');
 
-startWorker(
+startWorker(jobType, () =>
   createSinkWorker({
     transport: SCP_HTML_EXTRACTED,
     consumer: async ({ content }, { workerTag }) => {

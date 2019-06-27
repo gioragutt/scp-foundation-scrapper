@@ -3,8 +3,11 @@ const { BEGIN_PROCESSING_SCP, SCP_HTML_EXTRACTED } = require('../api/transports'
 const extractRawHtml = require('../api/extractRawHtml');
 const redis = require('../lib/redis');
 const { rawHtmlKey } = require('../api/redisKeys');
+const {
+  PROCESS_SCP: { jobType },
+} = require('../api/jobs');
 
-startWorker(
+startWorker(jobType, () =>
   createPipeWorker({
     from: BEGIN_PROCESSING_SCP,
     to: SCP_HTML_EXTRACTED,
