@@ -1,6 +1,6 @@
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const moduleName = () => {
+export const moduleName = (): string => {
   const parts = process.argv[1].split('/');
   const actualModuleName = parts[parts.length - 1].replace('.js', '');
   if (actualModuleName !== 'index') {
@@ -10,17 +10,20 @@ const moduleName = () => {
   return folderName;
 };
 
-const groupAndTime = async (label, action) => {
+export async function groupAndTime<T>(label: string, action: () => Promise<T>): Promise<T> {
   console.group(label);
   console.time(label);
   const result = await action();
   console.groupEnd();
   console.timeEnd(label);
   return result;
-};
+}
 
-module.exports = {
-  delay,
-  moduleName,
-  groupAndTime,
-};
+export function removeDuplicates<T>(arr: T[]): T[] {
+  return arr.reduce<T[]>((acc, curr) => {
+    if (!acc.includes(curr)) {
+      acc.push(curr);
+    }
+    return acc;
+  }, []);
+}

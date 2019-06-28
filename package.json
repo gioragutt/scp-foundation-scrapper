@@ -9,15 +9,23 @@
     "axios": "^0.19.0",
     "cheerio": "^1.0.0-rc.3",
     "ioredis": "^4.10.0",
-    "typescript": "^3.5.1",
     "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "@types/amqplib": "^0.5.12"
+    "@types/amqplib": "^0.5.12",
+    "@types/cheerio": "^0.22.11",
+    "@types/ioredis": "^4.0.12",
+    "@types/uuid": "^3.4.4",
+    "tslint": "^5.18.0",
+    "typescript": "^3.5.2"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "buildImage": "docker build -t scp-foundation-scrapper:tmp_1 ."
+    "buildImage": "docker build -t scp-foundation-scrapper:tmp_1 .",
+    "build": "npm run build-ts && npm run tslint",
+    "build-ts": "tsc",
+    "watch-ts": "tsc -w",
+    "tslint": "tslint -c tslint.json -p tsconfig.json"
   },
   "repository": {
     "type": "git",

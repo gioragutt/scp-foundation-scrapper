@@ -1,41 +1,41 @@
-const redis = require('./redis');
+import redis from './redis';
 
-const WorkerStatus = {
-  PENDING: 'PENDING',
-  IN_PROGRESS: 'IN_PROGRESS',
-  SUCCESS: 'SUCCESS',
-  ERROR: 'ERROR',
-};
+export enum WorkerStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  SUCCESS = 'SUCCESS',
+  ERROR = 'ERROR',
+}
 
-const JOB_ID = 'jobId';
+export const JOB_ID = 'jobId';
 
-const workersForJobTypeKey = type => `${type}-job-workers`;
-const jobWorkersStatusKey = jobId => `${jobId}-job-workers-status`;
+const workersForJobTypeKey = (type: string) => `${type}-job-workers`;
+const jobWorkersStatusKey = (jobId: string) => `${jobId}-job-workers-status`;
 
-const registerWorkerForJob = async (jobType, workerName) => {
+export const registerWorkerForJob = async (jobType: string, workerName: string) => {
   console.log(`Registering ${workerName} for jobType='${jobType}'`);
   await redis.sadd(workersForJobTypeKey(jobType), workerName);
 };
 
-const workersForJob = async jobType => redis.smembers(workersForJobTypeKey(jobType));
+export const workersForJob = async (jobType: string) => redis.smembers(workersForJobTypeKey(jobType));
 
-const registerJob = async (jobType, jobId) => {
+export const registerJob = async (jobType: string, jobId: string) => {
   const workers = await workersForJob(jobType);
   if (workers.length === 0) {
     throw new Error(`No workers registered for jobType='${jobType}'`);
   }
 
-  const statusToSet = new Map(workers.map(worker => [worker, WorkerStatus.PENDING]));
+  const statusToSet = new Map(workers.map((worker: any) => [worker, WorkerStatus.PENDING]));
   await redis.hmset(jobWorkersStatusKey(jobId), statusToSet);
   console.log(`Registered ${jobType} job ${jobId} with workers=${workers}`);
 };
 
-const updateWorkerStatus = async (jobId, workerName, status) => {
+const updateWorkerStatus = async (jobId: string, workerName: string, status: WorkerStatus) => {
   console.log(`Updating ${workerName} to ${status} for job ${jobId}`);
   await redis.hset(jobWorkersStatusKey(jobId), workerName, status);
 };
 
-const updateWorkerStatusTo = status => async (jobId, workerName) => {
+const updateWorkerStatusTo = (status: WorkerStatus) => async (jobId: string, workerName: string) => {
   await updateWorkerStatus(jobId, workerName, status);
 };
 
@@ -43,7 +43,7 @@ const updateWorkerStarted = updateWorkerStatusTo(WorkerStatus.IN_PROGRESS);
 const updateWorkerFinished = updateWorkerStatusTo(WorkerStatus.SUCCESS);
 const updateWorkerFailed = updateWorkerStatusTo(WorkerStatus.ERROR);
 
-const statusSetter = (jobId, workerName) => ({
+export const statusSetter = (jobId: string, workerName: string) => ({
   async start() {
     await updateWorkerStarted(jobId, workerName);
   },
@@ -54,16 +54,3 @@ const statusSetter = (jobId, workerName) => ({
     await updateWorkerFailed(jobId, workerName);
   },
 });
-
-module.exports = {
-  registerWorkerForJob,
-  workersForJob,
-  registerJob,
-  JOB_ID,
-
-  WorkerStatus,
-  updateWorkerStarted,
-  updateWorkerFinished,
-  updateWorkerFailed,
-  statusSetter,
-};

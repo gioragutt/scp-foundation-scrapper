@@ -1,9 +1,9 @@
-const { startJob } = require('./lib/jobs');
-const { PROCESS_SCP } = require('./api/jobs');
-const { delay } = require('./lib/utils');
+import { startJob } from './lib/jobs';
+import { PROCESS_SCP } from './api/jobs';
+import { delay } from './lib/utils';
 
 async function main() {
-  async function sendScpProcessRequest(scp) {
+  async function sendScpProcessRequest(scp: number) {
     await delay(1000);
     const url = `http://www.scp-wiki.net/scp-${scp.toString().padStart(3, '0')}`;
     console.log('Sending SCP processing request:', url);

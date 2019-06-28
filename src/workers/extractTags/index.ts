@@ -1,16 +1,14 @@
-const { createSinkWorker, startWorker } = require('../../lib/worker');
-const redis = require('../../lib/redis');
-const { groupAndTime } = require('../../lib/utils');
+import { createSinkWorker, startWorker } from '../../lib/worker';
+import redis from '../../lib/redis';
+import { groupAndTime } from '../../lib/utils';
 
-const { tagsKey, rawHtmlKey, tagsToScpsKey, ALL_TAGS_KEY } = require('../../api/redisKeys');
-const { SCP_HTML_EXTRACTED } = require('../../api/transports');
-const {
-  PROCESS_SCP: { jobType },
-} = require('../../api/jobs');
+import { tagsKey, rawHtmlKey, tagsToScpsKey, ALL_TAGS_KEY } from '../../api/redisKeys';
+import { SCP_HTML_EXTRACTED } from '../../api/transports';
+import { PROCESS_SCP } from '../../api/jobs';
 
-const extractTags = require('./extractTags');
+import { extractTags } from './extractTags';
 
-const saveTags = async (id, tags) => {
+const saveTags = async (id: string, tags: string[]) => {
   const scpTags = tagsKey(id);
 
   const pipeline = redis.pipeline();
@@ -20,7 +18,8 @@ const saveTags = async (id, tags) => {
   pipeline.sadd(ALL_TAGS_KEY, ...tags);
   await pipeline.exec();
 };
-startWorker(jobType, () =>
+
+startWorker(PROCESS_SCP.jobType, () =>
   createSinkWorker({
     transport: SCP_HTML_EXTRACTED,
     consumer: async ({ content }, { workerTag }) => {
