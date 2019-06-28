@@ -1,19 +1,21 @@
-const amqp = require('amqplib');
-const { delay } = require('./utils');
+import { connect, Connection, Channel, Options } from 'amqplib';
+import { delay } from './utils';
+import { config } from '../config';
+import { Transport } from './transports';
 
 const {
   rabbitmqHost,
   rabbitmqUser,
   rabbitmqPass,
   connectionAttempts,
-  connectionRetryDelayMs,
-} = require('../config');
+  connectionRetryDelayMs
+} = config;
 
-async function connectToRabbit(amqpConnectionAddress) {
+async function connectToRabbit(amqpConnectionAddress: string): Promise<Connection> {
   let attempt = 0;
   while (true) {
     try {
-      const connection = await amqp.connect(amqpConnectionAddress);
+      const connection = await connect(amqpConnectionAddress);
       console.log('Connected successfully!');
       return connection;
     } catch (e) {
@@ -27,15 +29,15 @@ async function connectToRabbit(amqpConnectionAddress) {
   }
 }
 
-const createCachedResource = creator => {
-  let cachedResource;
+function createCachedResource<T>(creator: () => Promise<T>): () => Promise<T> {
+  let cachedResource: T;
   return async () => {
     if (!cachedResource) {
       cachedResource = await creator();
     }
     return cachedResource;
   };
-};
+}
 
 const createConnection = createCachedResource(() => {
   const amqpConnectionAddress = `amqp://${rabbitmqUser}:${rabbitmqPass}@${rabbitmqHost}`;
@@ -43,19 +45,17 @@ const createConnection = createCachedResource(() => {
   return connectToRabbit(amqpConnectionAddress);
 });
 
-const createChannel = createCachedResource(async () => {
+export const createChannel = createCachedResource(async () => {
   const connection = await createConnection();
   console.log('Creating channel');
   return connection.createChannel();
 });
 
-const sendToTransport = (channel, transport, data, options = {}) =>
+export function sendToTransport<T, O extends Options.Publish>(
+  channel: Channel, transport: Transport, data: T, options: O = {} as O) {
+
   transport.send(channel, Buffer.from(JSON.stringify(data)), {
     persistent: true,
     ...options,
   });
-
-module.exports = {
-  createChannel,
-  sendToTransport,
-};
+}

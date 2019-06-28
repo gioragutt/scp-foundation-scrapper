@@ -1,18 +1,25 @@
-const { createChannel, sendToTransport } = require('./rabbit');
-const { moduleName } = require('./utils');
-const jobTracking = require('./jobTracking');
+import { Message, Channel, ConsumeMessage } from 'amqplib';
 
-const messageHeaders = msg =>
+import { createChannel, sendToTransport } from './rabbit';
+import { moduleName } from './utils';
+import * as jobTracking from './jobTracking';
+import { Transport } from './transports';
+
+export type RabbitMessageConsumer = (msg: ConsumeMessage) => any | Promise<any>;
+export type MessageConsumer = (msg: ConsumeMessage, worker: Worker) => any | Promise<any>;
+export type ConsumerCreator = (worker: Worker) => MessageConsumer;
+
+const messageHeaders = (msg: Message): { [key: string]: any } =>
   Object.entries(msg.properties.headers)
     .filter(([key]) => !key.startsWith('x-'))
     .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
-const getJobId = msg => messageHeaders(msg)[jobTracking.JOB_ID];
+export const getJobId = (msg: Message): string => messageHeaders(msg)[jobTracking.JOB_ID];
 
-const wrapConsumerMethod = (worker, createConsumer) => {
+const wrapConsumerMethod = (worker: Worker, createConsumer: ConsumerCreator): RabbitMessageConsumer => {
   const consumer = createConsumer(worker);
 
-  return async msg => {
+  return async (msg: ConsumeMessage) => {
     const jobId = getJobId(msg);
     const { channel } = worker;
 
@@ -36,13 +43,34 @@ const wrapConsumerMethod = (worker, createConsumer) => {
   };
 };
 
-class Worker {
-  constructor({ channel, transportsToInit, transportsToConsume, createConsumer, options = {} }) {
+export interface WorkerOptions {
+  workerName?: string;
+}
+
+export interface WorkerCreationParams {
+  channel: Channel;
+  transportsToInit: Transport[];
+  transportToConsume: Transport;
+  createConsumer: ConsumerCreator;
+  options?: WorkerOptions;
+}
+
+export class Worker {
+  channel: Channel;
+  transportsToInit: Transport[];
+  transportToConsume: Transport;
+  consumer: RabbitMessageConsumer;
+  consumerTag: string;
+  workerName: string;
+  workerTag: string;
+  private initialized: boolean;
+
+  constructor({ channel, transportsToInit, transportToConsume, createConsumer, options = {} as WorkerOptions }: WorkerCreationParams) {
     this.channel = channel;
     this.transportsToInit = transportsToInit;
-    this.transportToConsume = transportsToConsume;
+    this.transportToConsume = transportToConsume;
     this.consumer = wrapConsumerMethod(this, createConsumer);
-    this.consumerTag = null;
+    this.consumerTag = undefined;
     this.initialized = false;
     this.workerName = options.workerName || moduleName();
     this.workerTag = `[${this.workerName}]`;
@@ -72,11 +100,11 @@ class Worker {
 
     console.log(
       `Stopping ${this.workerTag} worker of ${this.transportToConsume}, consumerTag=${
-        this.consumerTag
+      this.consumerTag
       }`
     );
     await this.channel.cancel(this.consumerTag);
-    this.consumerTag = null;
+    this.consumerTag = undefined;
     console.log(`Worker ${this.workerTag} stopped`);
   }
 
@@ -98,12 +126,14 @@ class Worker {
   }
 }
 
-const createWorker = async (transportsToInit, transportsToConsume, options, createConsumer) => {
+type WorkerInitializer = (worker: Worker) => (msg: ConsumeMessage) => Promise<void>;
+
+const createWorker = async (transportsToInit: Transport[], transportToConsume: Transport, options: WorkerOptions, createConsumer: WorkerInitializer) => {
   const channel = await createChannel();
   const worker = new Worker({
     channel,
     transportsToInit,
-    transportsToConsume,
+    transportToConsume,
     createConsumer,
     options,
   });
@@ -111,7 +141,12 @@ const createWorker = async (transportsToInit, transportsToConsume, options, crea
   return worker;
 };
 
-const createSinkWorker = ({ transport, consumer, ...options }) =>
+export interface SinkWorkerParams extends WorkerOptions {
+  transport: Transport;
+  consumer: MessageConsumer;
+}
+
+export const createSinkWorker = ({ transport, consumer, ...options }: SinkWorkerParams) =>
   createWorker([transport], transport, options, worker => async msg => {
     try {
       await consumer(msg, worker);
@@ -123,7 +158,13 @@ const createSinkWorker = ({ transport, consumer, ...options }) =>
     }
   });
 
-const createPipeWorker = ({ from, to, consumer, ...options }) =>
+export interface PipeWorkerParams extends WorkerOptions {
+  from: Transport;
+  to: Transport;
+  consumer: MessageConsumer;
+}
+
+export const createPipeWorker = ({ from, to, consumer, ...options }: PipeWorkerParams) =>
   createWorker([from, to], from, options, worker => async msg => {
     const { channel } = worker;
     try {
@@ -142,7 +183,7 @@ const createPipeWorker = ({ from, to, consumer, ...options }) =>
     }
   });
 
-const startWorker = async (jobType, createWorker) => {
+export const startWorker = async (jobType: string, createWorker: () => Worker | Promise<Worker>) => {
   try {
     const worker = await createWorker();
     await jobTracking.registerWorkerForJob(jobType, worker.workerName);
@@ -152,11 +193,4 @@ const startWorker = async (jobType, createWorker) => {
     console.error(e);
     process.exit(-1);
   }
-};
-
-module.exports = {
-  createSinkWorker,
-  createPipeWorker,
-  startWorker,
-  getJobId,
 };

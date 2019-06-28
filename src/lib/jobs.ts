@@ -1,14 +1,26 @@
-const { createChannel, sendToTransport } = require('./rabbit');
-const { JOB_ID, registerJob } = require('./jobTracking');
-const uuid = require('uuid');
+import { Channel } from 'amqplib';
+import { createChannel, sendToTransport } from './rabbit';
+import { JOB_ID, registerJob } from './jobTracking';
+import uuid from 'uuid';
+import { Transport } from './transports';
 
-const createJobDefinition = (jobType, transport, requiredArgs = []) => ({
+export interface JobDefinition {
+  jobType: string;
+  transport: Transport;
+  requiredArgs?: string[];
+}
+
+export const createJobDefinition = (
+  jobType: string,
+  transport: Transport,
+  requiredArgs: string[] = []
+): JobDefinition => ({
   jobType,
   transport,
   requiredArgs,
 });
 
-const validateJobArguments = (requiredArgs, args) => {
+const validateJobArguments = (requiredArgs: string[], args: string[] | object): void | never => {
   if (!requiredArgs || requiredArgs.length === 0) {
     return;
   }
@@ -24,12 +36,19 @@ const validateJobArguments = (requiredArgs, args) => {
   });
 };
 
-const startJob = async ({
+export interface StartJobParams<T = any> {
+  channel?: Channel;
+  definition: JobDefinition;
+  args: T;
+  headers?: { [header: string]: string };
+}
+
+export async function startJob({
   channel,
   definition: { jobType, transport, requiredArgs },
   args = {},
   headers = {},
-}) => {
+}: StartJobParams): Promise<void> {
   validateJobArguments(requiredArgs, args);
 
   if (!channel) {
@@ -50,9 +69,4 @@ const startJob = async ({
       [JOB_ID]: jobId,
     },
   });
-};
-
-module.exports = {
-  createJobDefinition,
-  startJob,
-};
+}
