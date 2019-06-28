@@ -2,12 +2,12 @@ const { createChannel, sendToTransport } = require('./rabbit');
 const { moduleName } = require('./utils');
 const jobTracking = require('./jobTracking');
 
-const customHeaders = msg =>
+const messageHeaders = msg =>
   Object.entries(msg.properties.headers)
     .filter(([key]) => !key.startsWith('x-'))
     .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
-const getJobId = msg => customHeaders(msg)[jobTracking.JOB_ID];
+const getJobId = msg => messageHeaders(msg)[jobTracking.JOB_ID];
 
 const wrapConsumerMethod = (worker, createConsumer) => {
   const consumer = createConsumer(worker);
@@ -23,14 +23,14 @@ const wrapConsumerMethod = (worker, createConsumer) => {
       return;
     }
 
-    const jobStatus = jobTracking.statusSetter(jobId, worker.workerName);
+    const job = jobTracking.statusSetter(jobId, worker.workerName);
     try {
-      await jobStatus.start();
+      await job.start();
       await consumer(msg, worker);
       channel.ack(msg);
-      await jobStatus.finish();
+      await job.finish();
     } catch (e) {
-      await jobStatus.error();
+      await job.error();
       channel.reject(msg, false);
     }
   };
@@ -129,7 +129,7 @@ const createPipeWorker = ({ from, to, consumer, ...options }) =>
     try {
       const response = await consumer(msg, worker);
       if (response) {
-        const headers = customHeaders(msg);
+        const headers = messageHeaders(msg);
         sendToTransport(channel, to, response, { headers });
       } else {
         console.warn(`Processing msg from ${from} returned falsy result, ignoring`);
@@ -158,4 +158,5 @@ module.exports = {
   createSinkWorker,
   createPipeWorker,
   startWorker,
+  getJobId,
 };
