@@ -32,7 +32,7 @@ services:
 
   extract-raw-html-worker:
     image: scp-foundation-scrapper:tmp_1
-    command: node workers/extractRawHtml.js
+    command: node workers/extractRawHtml/index.js
     restart: on-failure
     environment:
       RABBITMQ_HOST: rabbit
@@ -47,7 +47,7 @@ services:
 
   extract-related-scps-worker:
     image: scp-foundation-scrapper:tmp_1
-    command: node workers/extractRelatedScps.js
+    command: node workers/extractRelatedScps/index.js
     restart: on-failure
     environment:
       RABBITMQ_HOST: rabbit
@@ -62,7 +62,7 @@ services:
 
   extract-tags-worker:
     image: scp-foundation-scrapper:tmp_1
-    command: node workers/extractTags.js
+    command: node workers/extractTags/index.js
     restart: on-failure
     environment:
       RABBITMQ_HOST: rabbit

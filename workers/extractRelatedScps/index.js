@@ -1,13 +1,14 @@
-const { createSinkWorker, startWorker } = require('../lib/worker');
-const redis = require('../lib/redis');
-const { groupAndTime } = require('../lib/utils');
+const { createSinkWorker, startWorker } = require('../../lib/worker');
+const redis = require('../../lib/redis');
+const { groupAndTime } = require('../../lib/utils');
 
-const extractRelatedScps = require('../api/extractRelatedScps');
-const { SCP_HTML_EXTRACTED } = require('../api/transports');
-const { relatedScpsKey, rawHtmlKey } = require('../api/redisKeys');
+const { SCP_HTML_EXTRACTED } = require('../../api/transports');
+const { relatedScpsKey, rawHtmlKey } = require('../../api/redisKeys');
 const {
   PROCESS_SCP: { jobType },
-} = require('../api/jobs');
+} = require('../../api/jobs');
+
+const extractRelatedScps = require('./extractRelatedScps');
 
 startWorker(jobType, () =>
   createSinkWorker({
