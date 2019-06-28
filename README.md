@@ -7,31 +7,33 @@
 |          `npm run buildImage`           |             rebuild image              |
 |             `./restart.sh`              | rebuild image and restart all services |
 | `docker-compose logs -f <service name>` |         get logs of a service          |
+|            `./redis-cli.sh`             |        opens a redis-cli shell         |
 
 ## Project Structure
 
-    .
+    src
     ├── api                     # Logic, non-library related module
-    │   ├── jobs.js             # Available job definitions
-    │   ├── redisKeys.js        # common redis keys/key-getters
-    │   └── transports.js       # transport definitions for workers
+    │   ├── constants.ts        # Shared constants
+    │   ├── jobs.ts             # Available job definitions
+    │   ├── redisKeys.ts        # common redis keys/key-getters
+    │   └── transports.ts       # transport definitions for workers
     │
     ├── lib                     # Library modules
-    │   ├── jobs.js             # Job creation
-    │   ├── jobTracking.js      # Job worker status tracking
-    │   ├── rabbit.js           # RabbitMQ utilities and abstractions
-    │   ├── redis.js            # 'ioredis' singleton export
-    │   ├── transports.js       # RabbitMQ message routing abstraction
-    │   ├── utils.js            # General utilities
-    │   └── worker.js           # Worker library
+    │   ├── jobs.ts             # Job creation
+    │   ├── jobTracking.ts      # Job worker status tracking
+    │   ├── rabbit.ts           # RabbitMQ utilities and abstractions
+    │   ├── redis.ts            # 'ioredis' singleton export
+    │   ├── transports.ts       # RabbitMQ message routing abstraction
+    │   ├── utils.ts            # General utilities
+    │   └── worker.ts           # Worker library
     │
     ├── workers                 # Worker definitions
     │   ├── worker1             # Worker entry point and logic modules
-    │   │   └── index.js
+    │   │   └── index.ts
     │   └── workerN
-    │       └── index.js
+    │       └── index.ts
     │
-    ├── config.js               # Export configuration to modules
+    ├── config.ts               # Export configuration to modules
     ├── docker-compose.yaml     # Services definition file (redis, rabbit, workers, etc)
-    ├── test.js                 # Dummy file for testing code manually
-    └── index.js                # Dummy file for starting jobs
+    ├── test.ts                 # Dummy file for testing code manually
+    └── index.ts                # Dummy file for starting jobs
