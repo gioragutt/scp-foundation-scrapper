@@ -1,7 +1,5 @@
 # scp-foundation-scrapper
 
-# Development
-
 ## Running the server
 
 |                 command                 |              description               |
