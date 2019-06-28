@@ -5,13 +5,15 @@
 |                 command                 |              description               |
 | :-------------------------------------: | :------------------------------------: |
 |          `npm run buildImage`           |             rebuild image              |
-|             `./restart.sh`              | rebuild image and restart all services |
+|         `./scripts/restart.sh`          | rebuild image and restart all services |
 | `docker-compose logs -f <service name>` |         get logs of a service          |
-|            `./redis-cli.sh`             |        opens a redis-cli shell         |
+|        `./scripts/redis-cli.sh`         |        opens a redis-cli shell         |
 
 ## Project Structure
 
     src
+    ├── scripts                 # Useful scripts
+    │
     ├── api                     # Logic, non-library related module
     │   ├── constants.ts        # Shared constants
     │   ├── jobs.ts             # Available job definitions
