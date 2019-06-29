@@ -1,4 +1,5 @@
 import redis from './redis';
+import { sendSystemEvent, JobStarted, WorkerStatusUpdate } from './systemEvents';
 
 export enum WorkerStatus {
   PENDING = 'PENDING',
@@ -28,15 +29,14 @@ export const registerJob = async (jobType: string, jobId: string) => {
   const statusToSet = new Map(workers.map((worker: any) => [worker, WorkerStatus.PENDING]));
   await redis.hmset(jobWorkersStatusKey(jobId), statusToSet);
   console.log(`Registered ${jobType} job ${jobId} with workers=${workers}`);
-};
 
-const updateWorkerStatus = async (jobId: string, workerName: string, status: WorkerStatus) => {
-  console.log(`Updating ${workerName} to ${status} for job ${jobId}`);
-  await redis.hset(jobWorkersStatusKey(jobId), workerName, status);
+  await sendSystemEvent(new JobStarted(jobId, jobType, workers));
 };
 
 const updateWorkerStatusTo = (status: WorkerStatus) => async (jobId: string, workerName: string) => {
-  await updateWorkerStatus(jobId, workerName, status);
+  console.log(`Updating ${workerName} to ${status} for job ${jobId}`);
+  await redis.hset(jobWorkersStatusKey(jobId), workerName, status);
+  await sendSystemEvent(new WorkerStatusUpdate(jobId, workerName, status));
 };
 
 const updateWorkerStarted = updateWorkerStatusTo(WorkerStatus.IN_PROGRESS);

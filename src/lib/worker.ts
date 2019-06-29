@@ -4,6 +4,7 @@ import { createChannel, sendToTransport } from './rabbit';
 import { moduleName } from './utils';
 import * as jobTracking from './jobTracking';
 import { Transport } from './transports';
+import { sendSystemEvent, WorkerStarted } from './systemEvents';
 
 export type RabbitMessageConsumer = (msg: ConsumeMessage) => any | Promise<any>;
 export type MessageConsumer = (msg: ConsumeMessage, worker: Worker) => any | Promise<any>;
@@ -188,6 +189,7 @@ export const startWorker = async (jobType: string, createWorker: () => Worker | 
     const worker = await createWorker();
     await jobTracking.registerWorkerForJob(jobType, worker.workerName);
     await worker.start();
+    await sendSystemEvent(new WorkerStarted(jobType, worker.workerName));
   } catch (e) {
     console.error('Caught error starting worker');
     console.error(e);

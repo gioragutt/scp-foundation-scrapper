@@ -51,6 +51,12 @@ export const createChannel = createCachedResource(async () => {
   return connection.createChannel();
 });
 
+export const createConfirmChannel = createCachedResource(async () => {
+  const connection = await createConnection();
+  console.log('Creating channel');
+  return connection.createConfirmChannel();
+});
+
 export function sendToTransport<T, O extends Options.Publish>(
   channel: Channel, transport: Transport, data: T, options: O = {} as O) {
 

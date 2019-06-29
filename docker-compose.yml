@@ -74,3 +74,18 @@ services:
     depends_on:
       - rabbit
       - redis
+
+  system-events-writer:
+    image: scp-foundation-scrapper:tmp_1
+    command: node workers/systemEventsWriter/index.js
+    restart: on-failure
+    environment:
+      RABBITMQ_HOST: rabbit
+      RABBITMQ_USER: rabbitmq
+      RABBITMQ_PASS: rabbitmq
+      CONNECTION_ATTEMPTS: 5
+      CONNECTION_RETRY_DELAY_MS: 2000
+      REDIS_HOST: redis
+    depends_on:
+      - rabbit
+      - redis
