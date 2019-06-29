@@ -21,11 +21,12 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "buildImage": "docker build -t scp-foundation-scrapper:tmp_1 .",
-    "build": "npm run build-ts && npm run tslint",
+    "build-image": "docker build -t scp-foundation-scrapper:tmp_1 .",
+    "build": "npm run build-ts && npm run lint",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
-    "tslint": "tslint -c tslint.json -p tsconfig.json"
+    "lint": "tslint -c tslint.json -p tsconfig.json",
+    "lint-fix": "npm run lint -- --fix"
   },
   "repository": {
     "type": "git",
