@@ -1,4 +1,4 @@
-import { connect, Connection, Channel, Options } from 'amqplib';
+import { connect, Connection, Channel, Options, Message } from 'amqplib';
 import { delay } from './utils';
 import { config } from '../config';
 import { Transport } from './transports';
@@ -65,3 +65,8 @@ export function sendToTransport<T, O extends Options.Publish>(
     ...options,
   });
 }
+
+export const messageHeaders = (msg: Message): { [key: string]: any } =>
+  Object.entries(msg.properties.headers)
+    .filter(([key]) => !key.startsWith('x-'))
+    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});

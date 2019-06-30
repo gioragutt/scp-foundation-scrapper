@@ -15,9 +15,10 @@ export abstract class Transport {
     this.initialized = true;
   }
 
-  async doInit(channel: Channel): Promise<void> { }
+  protected async doInit(channel: Channel): Promise<void> { }
 
   async consumptionInit(channel: Channel): Promise<void> {
+    await this.init(channel);
     if (this.consumptionInitialized) {
       return;
     }
@@ -25,7 +26,7 @@ export abstract class Transport {
     this.consumptionInitialized = true;
   }
 
-  async doConsumptionInit(channel: Channel): Promise<void> { }
+  protected async doConsumptionInit(channel: Channel): Promise<void> { }
 
   abstract send(channel: Channel, buffer: Buffer, options: Options.Publish): void;
 }

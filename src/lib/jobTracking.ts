@@ -43,18 +43,6 @@ const updateWorkerStatusTo = (status: WorkerStatus) => async (jobId: string, wor
   await sendSystemEvent(new WorkerStatusUpdate(jobId, workerName, status));
 };
 
-const updateWorkerStarted = updateWorkerStatusTo(WorkerStatus.IN_PROGRESS);
-const updateWorkerFinished = updateWorkerStatusTo(WorkerStatus.SUCCESS);
-const updateWorkerFailed = updateWorkerStatusTo(WorkerStatus.ERROR);
-
-export const statusSetter = (jobId: string, workerName: string) => ({
-  async start() {
-    await updateWorkerStarted(jobId, workerName);
-  },
-  async finish() {
-    await updateWorkerFinished(jobId, workerName);
-  },
-  async error() {
-    await updateWorkerFailed(jobId, workerName);
-  },
-});
+export const updateWorkerStarted = updateWorkerStatusTo(WorkerStatus.IN_PROGRESS);
+export const updateWorkerFinished = updateWorkerStatusTo(WorkerStatus.SUCCESS);
+export const updateWorkerFailed = updateWorkerStatusTo(WorkerStatus.ERROR);

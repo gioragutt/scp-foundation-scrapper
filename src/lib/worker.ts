@@ -1,6 +1,6 @@
 import { Message, Channel, ConsumeMessage } from 'amqplib';
 
-import { createChannel, sendToTransport } from './rabbit';
+import { createChannel, sendToTransport, messageHeaders } from './rabbit';
 import { moduleName } from './utils';
 import * as jobTracking from './jobTracking';
 import { Transport } from './transports';
@@ -10,49 +10,17 @@ export type RabbitMessageConsumer = (msg: ConsumeMessage) => any | Promise<any>;
 export type MessageConsumer = (msg: ConsumeMessage, worker: Worker) => any | Promise<any>;
 export type ConsumerCreator = (worker: Worker) => MessageConsumer;
 
-const messageHeaders = (msg: Message): { [key: string]: any } =>
-  Object.entries(msg.properties.headers)
-    .filter(([key]) => !key.startsWith('x-'))
-    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
-
 export const getJobId = (msg: Message): string => messageHeaders(msg)[jobTracking.JOB_ID];
-
-const wrapConsumerMethod = (worker: Worker, createConsumer: ConsumerCreator): RabbitMessageConsumer => {
-  const consumer = createConsumer(worker);
-
-  return async (msg: ConsumeMessage) => {
-    const jobId = getJobId(msg);
-    const { channel } = worker;
-
-    if (!jobId) {
-      console.warn(`Recieved message without ${jobTracking.JOB_ID} field. Ignoring`);
-      console.warn(msg);
-      channel.reject(msg);
-      return;
-    }
-
-    const job = jobTracking.statusSetter(jobId, worker.workerName);
-    try {
-      await job.start();
-      await consumer(msg, worker);
-      channel.ack(msg);
-      await job.finish();
-    } catch (e) {
-      await job.error();
-      channel.reject(msg, false);
-    }
-  };
-};
 
 export interface WorkerOptions {
   workerName?: string;
 }
 
 export interface WorkerCreationParams {
-  channel: Channel;
+  channel?: Channel;
   transportsToInit: Transport[];
   transportToConsume: Transport;
-  createConsumer: ConsumerCreator;
+  messageConsumer: MessageConsumer;
   options?: WorkerOptions;
 }
 
@@ -60,17 +28,17 @@ export class Worker {
   channel: Channel;
   transportsToInit: Transport[];
   transportToConsume: Transport;
-  consumer: RabbitMessageConsumer;
+  messageConsumer: MessageConsumer;
   consumerTag: string;
   workerName: string;
   workerTag: string;
   private initialized: boolean;
 
-  constructor({ channel, transportsToInit, transportToConsume, createConsumer, options = {} as WorkerOptions }: WorkerCreationParams) {
+  constructor({ channel, transportsToInit, transportToConsume, messageConsumer, options = {} as WorkerOptions }: WorkerCreationParams) {
     this.channel = channel;
     this.transportsToInit = transportsToInit;
     this.transportToConsume = transportToConsume;
-    this.consumer = wrapConsumerMethod(this, createConsumer);
+    this.messageConsumer = messageConsumer;
     this.consumerTag = undefined;
     this.initialized = false;
     this.workerName = options.workerName || moduleName();
@@ -85,7 +53,7 @@ export class Worker {
     console.log(`Starting ${this.workerTag} worker for ${this.transportToConsume}`);
     const { consumerTag } = await this.channel.consume(
       this.transportToConsume.queueName,
-      this.consumer
+      this.consume.bind(this)
     );
     console.log(`Worker ${this.workerTag} started, consumerTag='${consumerTag}'`);
     this.consumerTag = consumerTag;
@@ -125,19 +93,50 @@ export class Worker {
 
     console.log(`Initialized ${this.workerTag} worker for ${this.transportToConsume}`);
   }
+
+  async consume(msg: ConsumeMessage) {
+    const { channel } = this;
+
+    try {
+      await this.beforeAcceptingMessage(msg);
+    } catch (e) {
+      console.warn('Ignoring message due to', e);
+      channel.reject(msg);
+      return;
+    }
+
+    try {
+      await this.messageConsumer(msg, this);
+      channel.ack(msg);
+      await this.afterAcceptingMessage(msg);
+    } catch (e) {
+      channel.reject(msg, false);
+      await this.onAcceptingError(msg);
+    }
+  }
+
+  async beforeAcceptingMessage(msg: ConsumeMessage) {
+    const jobId = getJobId(msg);
+    if (!jobId) {
+      throw new Error(`Message without ${jobTracking.JOB_ID} field`);
+    }
+    await jobTracking.updateWorkerStarted(jobId, this.workerName);
+  }
+
+  async afterAcceptingMessage(msg: ConsumeMessage) {
+    const jobId = getJobId(msg);
+    await jobTracking.updateWorkerFinished(jobId, this.workerName);
+  }
+
+  async onAcceptingError(msg: ConsumeMessage) {
+    const jobId = getJobId(msg);
+    await jobTracking.updateWorkerFailed(jobId, this.workerName);
+  }
 }
 
-type WorkerInitializer = (worker: Worker) => (msg: ConsumeMessage) => Promise<void>;
-
-const createWorker = async (transportsToInit: Transport[], transportToConsume: Transport, options: WorkerOptions, createConsumer: WorkerInitializer) => {
-  const channel = await createChannel();
-  const worker = new Worker({
-    channel,
-    transportsToInit,
-    transportToConsume,
-    createConsumer,
-    options,
-  });
+const createWorker = async (params: WorkerCreationParams) => {
+  const channel = params.channel || await createChannel();
+  const worker = new Worker({ ...params, channel });
   await worker.init();
   return worker;
 };
@@ -148,14 +147,19 @@ export interface SinkWorkerParams extends WorkerOptions {
 }
 
 export const createSinkWorker = ({ transport, consumer, ...options }: SinkWorkerParams) =>
-  createWorker([transport], transport, options, worker => async msg => {
-    try {
-      await consumer(msg, worker);
-    } catch (e) {
-      console.error(`Processing msg from ${transport} failed`);
-      console.error(`Message being processed was`, msg);
-      console.error('Error caught is', e);
-      throw e;
+  createWorker({
+    transportsToInit: [transport],
+    transportToConsume: transport,
+    options,
+    messageConsumer: async (msg: ConsumeMessage, worker: Worker) => {
+      try {
+        await consumer(msg, worker);
+      } catch (e) {
+        console.error(`Processing msg from ${transport} failed`);
+        console.error(`Message being processed was`, msg);
+        console.error('Error caught is', e);
+        throw e;
+      }
     }
   });
 
@@ -166,21 +170,26 @@ export interface PipeWorkerParams extends WorkerOptions {
 }
 
 export const createPipeWorker = ({ from, to, consumer, ...options }: PipeWorkerParams) =>
-  createWorker([from, to], from, options, worker => async msg => {
-    const { channel } = worker;
-    try {
-      const response = await consumer(msg, worker);
-      if (response) {
-        const headers = messageHeaders(msg);
-        sendToTransport(channel, to, response, { headers });
-      } else {
-        console.warn(`Processing msg from ${from} returned falsy result, ignoring`);
+  createWorker({
+    transportsToInit: [from, to],
+    transportToConsume: from,
+    options,
+    messageConsumer: async (msg, worker) => {
+      const { channel } = worker;
+      try {
+        const response = await consumer(msg, worker);
+        if (response) {
+          const headers = messageHeaders(msg);
+          sendToTransport(channel, to, response, { headers });
+        } else {
+          console.warn(`Processing msg from ${from} returned falsy result, ignoring`);
+        }
+      } catch (e) {
+        console.error(`Processing msg from ${from} failed, not sending to ${to}`);
+        console.error(`Message being processed was`, msg);
+        console.error('Error caught is', e);
+        throw e;
       }
-    } catch (e) {
-      console.error(`Processing msg from ${from} failed, not sending to ${to}`);
-      console.error(`Message being processed was`, msg);
-      console.error('Error caught is', e);
-      throw e;
     }
   });
 
