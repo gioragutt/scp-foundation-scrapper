@@ -196,7 +196,6 @@ export const createPipeWorker = ({ from, to, consumer, ...options }: PipeWorkerP
 export const startWorker = async (jobType: string, createWorker: () => Worker | Promise<Worker>) => {
   try {
     const worker = await createWorker();
-    await jobTracking.registerWorkerForJob(jobType, worker.workerName);
     await worker.start();
     await sendSystemEvent(new WorkerStarted(jobType, worker.workerName));
   } catch (e) {
