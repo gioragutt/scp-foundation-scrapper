@@ -77,3 +77,18 @@ services:
     depends_on:
       - rabbit
       - redis
+
+  rest-api:
+    image: scp-foundation-scrapper:tmp_1
+    hostname: rest-api
+    command: node rest/index.js
+    restart: on-failure
+    environment:
+      <<: *x-common-env
+      API_HOST: 0.0.0.0
+      API_PORT: 3000
+    ports:
+      - '3000:3000'
+    depends_on:
+      - rabbit
+      - redis

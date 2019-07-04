@@ -7,10 +7,7 @@ import {
 } from '../../lib/systemEvents';
 import redis from '../../lib/redis';
 import { WorkerStatus } from '../../lib/jobTracking';
-
-const jobKey = (jobId: string) => `${jobId}-job`;
-const workersForJobTypeKey = (type: string) => `${type}-job-workers`;
-const jobWorkersStatusKey = (jobId: string) => `${jobId}-job-workers-status`;
+import { jobWorkersStatusKey, jobKey, workersForJobTypeKey } from '../../api/redisKeys';
 
 async function jobStarted({ jobId, jobType, workers }: JobStarted) {
   const pipeline = redis.pipeline();

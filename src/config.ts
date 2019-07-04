@@ -9,6 +9,8 @@ export interface Config {
   connectionAttempts: number;
   connectionRetryDelayMs: number;
   redisHost: string;
+  apiHost: string;
+  apiPort: number;
 }
 
 type RawConfig = {
@@ -22,10 +24,13 @@ const rawConfig: RawConfig = mapEnv({
   connectionAttempts: '10',
   connectionRetryDelayMs: '1000',
   redisHost: 'localhost',
+  apiHost: '0.0.0.0',
+  apiPort: '3000',
 });
 
 export const config: Config = {
   ...rawConfig,
   connectionAttempts: Number.parseInt(rawConfig.connectionAttempts),
   connectionRetryDelayMs: Number.parseInt(rawConfig.connectionRetryDelayMs),
+  apiPort: Number.parseInt(rawConfig.apiPort),
 };
