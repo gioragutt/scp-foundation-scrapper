@@ -4,7 +4,7 @@ import { groupAndTime } from '../../lib/utils';
 
 import { tagsKey, rawHtmlKey, tagsToScpsKey, ALL_TAGS_KEY } from '../../api/redisKeys';
 import { SCP_HTML_EXTRACTED } from '../../api/transports';
-import { PROCESS_SCP } from '../../api/jobs';
+import { PROCESS_SCP } from '../../api/jobDefinitions';
 
 import { extractTags } from './extractTags';
 

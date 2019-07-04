@@ -2,7 +2,7 @@ import { startWorker, createPipeWorker } from '../../lib/worker';
 import { SCP_HTML_EXTRACTED } from '../../api/transports';
 import redis from '../../lib/redis';
 import { rawHtmlKey } from '../../api/redisKeys';
-import { PROCESS_SCP } from '../../api/jobs';
+import { PROCESS_SCP } from '../../api/jobDefinitions';
 
 import { extractRawHtml } from './extractRawHtml';
 

@@ -1,9 +1,5 @@
-import { createJobDefinition } from '../lib/jobs';
-import { BEGIN_PROCESSING_SCP } from './transports';
 import redis from '../lib/redis';
 import { jobKey } from './redisKeys';
-
-export const PROCESS_SCP = createJobDefinition('PROCESS_SCP', BEGIN_PROCESSING_SCP);
 
 export interface Job {
   jobId: string;

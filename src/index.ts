@@ -1,5 +1,5 @@
 import { startJob } from './lib/jobs';
-import { PROCESS_SCP } from './api/jobs';
+import { PROCESS_SCP } from './api/jobDefinitions';
 import { delay } from './lib/utils';
 
 async function main() {

@@ -5,7 +5,7 @@ import { groupAndTime } from '../../lib/utils';
 
 import { SCP_HTML_EXTRACTED } from '../../api/transports';
 import { relatedScpsKey, rawHtmlKey } from '../../api/redisKeys';
-import { PROCESS_SCP } from '../../api/jobs';
+import { PROCESS_SCP } from '../../api/jobDefinitions';
 
 import { extractRelatedScps } from './extractRelatedScps';
 
