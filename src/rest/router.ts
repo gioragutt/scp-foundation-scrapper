@@ -1,5 +1,5 @@
 import { Router, Request, RequestHandler } from 'express';
-import { allJobs, jobById } from '../api/jobs';
+import { allJobs, jobById, createJob } from '../api/jobs';
 
 const {
   expressHelpers: { createApiEndpoint }
@@ -12,7 +12,15 @@ export const router = Router();
 
 router.get(
   '/jobs',
-  _(() => allJobs())
+  _(allJobs)
+);
+
+router.post(
+  '/jobs',
+  _(async ({ body: { definition, args } }) => {
+    const jobId = await createJob(definition, args);
+    return { jobId };
+  })
 );
 
 router.get(

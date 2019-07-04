@@ -31,7 +31,7 @@ const validateJobArguments = (requiredArgs: string[], args: string[] | object): 
 
   requiredArgs.forEach(arg => {
     if (!(arg in args)) {
-      throw new Error(`Missing required argument ${arg} in ${args}`);
+      throw new Error(`Missing required argument ${arg} in ${JSON.stringify(args)}`);
     }
   });
 };
@@ -48,7 +48,7 @@ export async function startJob({
   definition: { jobType, transport, requiredArgs },
   args = {},
   headers = {},
-}: StartJobParams): Promise<void> {
+}: StartJobParams): Promise<string> {
   validateJobArguments(requiredArgs, args);
 
   if (!channel) {
@@ -61,7 +61,9 @@ export async function startJob({
 
   console.log(`Starting ${jobType} job ${jobId}`);
   console.log('Parameters:', args);
-  console.log('Headers:', headers);
+  if (headers && Object.keys(headers).length > 0) {
+    console.log('Headers:', headers);
+  }
 
   sendToTransport(channel, transport, args, {
     headers: {
@@ -69,4 +71,5 @@ export async function startJob({
       [JOB_ID]: jobId,
     },
   });
+  return jobId;
 }
