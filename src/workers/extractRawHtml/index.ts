@@ -11,7 +11,7 @@ startWorker(PROCESS_SCP.jobType, () =>
     from: PROCESS_SCP.transport,
     to: SCP_HTML_EXTRACTED,
     consumer: async ({ content }) => {
-      const url = JSON.parse(content.toString());
+      const { url } = JSON.parse(content.toString());
       const { id, html } = await extractRawHtml(url);
       await redis.set(rawHtmlKey(id), html);
       return id;
