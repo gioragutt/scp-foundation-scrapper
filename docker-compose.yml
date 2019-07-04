@@ -1,5 +1,13 @@
-# Docker-compose for Graylog
-version: '3'
+version: '3.4'
+
+x-common-env: &x-common-env
+  RABBITMQ_HOST: rabbit
+  RABBITMQ_USER: rabbitmq
+  RABBITMQ_PASS: rabbitmq
+  CONNECTION_ATTEMPTS: 5
+  CONNECTION_RETRY_DELAY_MS: 2000
+  REDIS_HOST: redis
+
 services:
   rabbit:
     image: 'rabbitmq:3-management'
@@ -35,12 +43,7 @@ services:
     command: node workers/extractRawHtml/index.js
     restart: on-failure
     environment:
-      RABBITMQ_HOST: rabbit
-      RABBITMQ_USER: rabbitmq
-      RABBITMQ_PASS: rabbitmq
-      CONNECTION_ATTEMPTS: 5
-      CONNECTION_RETRY_DELAY_MS: 2000
-      REDIS_HOST: redis
+      <<: *x-common-env
     depends_on:
       - rabbit
       - redis
@@ -50,12 +53,7 @@ services:
     command: node workers/extractRelatedScps/index.js
     restart: on-failure
     environment:
-      RABBITMQ_HOST: rabbit
-      RABBITMQ_USER: rabbitmq
-      RABBITMQ_PASS: rabbitmq
-      CONNECTION_ATTEMPTS: 5
-      CONNECTION_RETRY_DELAY_MS: 2000
-      REDIS_HOST: redis
+      <<: *x-common-env
     depends_on:
       - rabbit
       - redis
@@ -65,12 +63,7 @@ services:
     command: node workers/extractTags/index.js
     restart: on-failure
     environment:
-      RABBITMQ_HOST: rabbit
-      RABBITMQ_USER: rabbitmq
-      RABBITMQ_PASS: rabbitmq
-      CONNECTION_ATTEMPTS: 5
-      CONNECTION_RETRY_DELAY_MS: 2000
-      REDIS_HOST: redis
+      <<: *x-common-env
     depends_on:
       - rabbit
       - redis
@@ -80,12 +73,7 @@ services:
     command: node workers/systemEventsWriter/index.js
     restart: on-failure
     environment:
-      RABBITMQ_HOST: rabbit
-      RABBITMQ_USER: rabbitmq
-      RABBITMQ_PASS: rabbitmq
-      CONNECTION_ATTEMPTS: 5
-      CONNECTION_RETRY_DELAY_MS: 2000
-      REDIS_HOST: redis
+      <<: *x-common-env
     depends_on:
       - rabbit
       - redis
